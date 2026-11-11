@@ -28,4 +28,8 @@ npm test
 
 Tests create synthetic products and orders in the persistent local database. To stop containers while keeping data, use `docker compose down`. Do not use `down --volumes` unless you intend to remove the demo's local database.
 
+## Postman
+
+Run the saved nine-request local smoke flow in the **DEMOS → OrderFlow Express — local smoke flow** folder in Postman Desktop. Select **No environment** and use the local runner. A portable copy is in [postman/OrderFlow-Express.postman_collection.json](postman/OrderFlow-Express.postman_collection.json). The sequence creates one synthetic product and order, checks idempotency and stock, then cancels the order twice. It does not test concurrent requests; use the HTTP integration suite for that scenario.
+
 This is a synthetic learning and engineering demonstration, not evidence of prior production delivery with these technologies.

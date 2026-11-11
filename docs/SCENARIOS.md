@@ -30,3 +30,11 @@ For each executed scenario, add: command/action; starting conditions; expected r
 - **Observed:** image built; MySQL and API reached healthy state; TypeScript build passed; six HTTP integration tests passed against the running API. In the competing-orders test, statuses were 201 and 409; in the same-key test, statuses were 201 and 200 with one order ID and two units deducted once.
 - **Implementation commit:** `627e5cc`. **Specification commit:** `9a2f526`.
 - **Limits:** scenarios have not been repeated under sustained load; reservation table rows were not queried independently; O11 database-failure rollback and actual deadlock recovery were not executed. A bounded three-attempt retry policy for deadlocks and lock wait timeouts is implemented, but its fault path is unverified. NestJS parity and all later stages are Not run. The first same-key concurrency attempt exposed a 500 caused by a locking read; removing that unnecessary lock and rebuilding produced the passing run. This is local integration evidence only.
+
+## Postman local smoke flow — 12 November 2026
+
+- **Action:** Run **DEMOS → OrderFlow Express — local smoke flow** in Postman Desktop, local runner, one iteration, no environment. Portable source: `postman/OrderFlow-Express.postman_collection.json`.
+- **Starting conditions:** Express and MySQL Compose containers running; isolated persistent local MySQL database. The flow generated a synthetic product and a fresh idempotency key. Implementation commit `b8e1595` was running; the Postman collection was not yet committed.
+- **Expected:** health 200; product creation 201; order creation 201; identical replay 200 with the same order ID; changed request under the same key 409; stock 5 → 3 → 5 after cancellation and repeated cancellation.
+- **Observed:** nine requests, nine assertions passed, zero errors. The run displayed 201 for product/order creation, 200 for replay, 409 for changed-key conflict, and 200 for cancellation and stock reads. Duration 1.717 seconds; average response time 31 ms. The run result was visible in Postman at 03:04:57 Asia/Karachi.
+- **Limits:** this is a sequential local smoke flow. The Postman run does not verify concurrent stock reservation, sustained load, rollback under injected failure, or a hosted integration. The performance numbers are diagnostic for this run only, not a benchmark.
