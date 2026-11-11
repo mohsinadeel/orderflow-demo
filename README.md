@@ -4,6 +4,8 @@ A self-directed, progressive order-management architecture demonstration. This r
 
 **Status:** Express baseline locally verified for the recorded scenarios. Database-failure recovery and later stages remain unverified. See the scenario matrix for evidence and limits.
 
+**Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. The remaining architecture stages are under development. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
+
 Read [the specification](docs/SPECIFICATION.md), [scenario matrix](docs/SCENARIOS.md), and [implementation plan](docs/PLAN.md). Results will be recorded with dates and commit IDs as stages are executed.
 
 The self-contained Docker Compose configuration is [compose.yaml](compose.yaml). It uses the official MySQL 8.4 image and builds the Express application image from [its Dockerfile](apps/api-express/Dockerfile).
