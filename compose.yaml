@@ -1,0 +1,45 @@
+name: orderflow-demo
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${ORDERFLOW_MYSQL_DATABASE:-orderflow}
+      MYSQL_USER: ${ORDERFLOW_MYSQL_USER:-orderflow}
+      MYSQL_PASSWORD: ${ORDERFLOW_MYSQL_PASSWORD:-local_orderflow_password}
+      MYSQL_ROOT_PASSWORD: ${ORDERFLOW_MYSQL_ROOT_PASSWORD:-local_root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./apps/api-express/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - orderflow
+
+  api-express:
+    build:
+      context: ./apps/api-express
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${ORDERFLOW_MYSQL_DATABASE:-orderflow}
+      DB_USER: ${ORDERFLOW_MYSQL_USER:-orderflow}
+      DB_PASSWORD: ${ORDERFLOW_MYSQL_PASSWORD:-local_orderflow_password}
+    ports:
+      - "${ORDERFLOW_EXPRESS_PORT:-8084}:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - orderflow
+
+volumes:
+  mysql_data:
+
+networks:
+  orderflow:
