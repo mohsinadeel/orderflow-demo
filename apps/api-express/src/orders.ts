@@ -61,6 +61,18 @@ export function createOrderService(pool: Pool) {
     get(id: string) { return orderById(pool, id); },
 
     async create(items: OrderLineInput[], key: string) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          return await this.createAttempt(items, key);
+        } catch (error) {
+          const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+          if ((code !== 'ER_LOCK_DEADLOCK' && code !== 'ER_LOCK_WAIT_TIMEOUT') || attempt === 2) throw error;
+        }
+      }
+      throw new Error('Order transaction retry budget exhausted');
+    },
+
+    async createAttempt(items: OrderLineInput[], key: string) {
       const sorted = canonicalItems(items);
       const hash = fingerprint(sorted);
       const connection = await pool.getConnection();
