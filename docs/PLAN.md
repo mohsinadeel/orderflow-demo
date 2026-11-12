@@ -1,6 +1,6 @@
 # Progressive implementation plan
 
-Status: Milestones 0–4 locally verified — 12 November 2026 (Asia/Karachi).
+Status: Milestones 0–5 locally verified — 12 November 2026 (Asia/Karachi).
 
 ## Architecture and runtime
 
@@ -19,7 +19,7 @@ Status: Milestones 0–4 locally verified — 12 November 2026 (Asia/Karachi).
 3. Build a restrained Next.js operator interface. Verify browser flows and error states. **Locally verified; implementation commit `8328106`, browser test and race fixes `8f15d0a`.**
 4. Add GraphQL queries and mutations over NestJS services. Compare equivalent REST and GraphQL workflows. **Locally verified; interface and evidence commits recorded in the scenario matrix.**
 4.5. Expose the REST and GraphQL contracts to browser visitors. Serve Swagger UI and OpenAPI from NestJS, link both explorers from the operator interface, add examples and bounded request controls, then verify the pages in a real browser. **Locally verified; evidence recorded in the scenario matrix.**
-5. Extract inventory as an experiment. Verify network failure, retry, duplicate request and partial failure handling. Commit the experiment and architecture decision.
+5. Extract inventory as an experiment. Verify network failure, retry, duplicate request and partial failure handling. **Locally verified; decision: retain the modular monolith and keep the split as an optional experiment.**
 6. Prepare reproducible instructions and an evidence summary. Keep capability claims tied to executed scenarios. Content/article planning follows the implementation evidence.
 
 Commits remain local until Mohsin explicitly authorises a push. GitHub repository creation is separate from a code push. No hosted deployment is assumed.

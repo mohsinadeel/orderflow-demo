@@ -1,6 +1,6 @@
 # Scenario matrix
 
-Status: Express, NestJS, UI and GraphQL local integration runs recorded below — 12 November 2026 (Asia/Karachi). Database-failure injection and service-split scenarios remain **Not run**.
+Status: Express, NestJS, UI, GraphQL and the isolated inventory-service experiment are locally verified within the boundaries below — 12 November 2026 (Asia/Karachi). Database-failure injection in the public order path remains **Not run**.
 
 For each executed scenario, add: command/action; starting conditions; expected result; observed result; verification date; commit ID; remaining limits. Keep separate records for Express, NestJS, UI, GraphQL and service split where applicable.
 
@@ -20,8 +20,8 @@ For each executed scenario, add: command/action; starting conditions; expected r
 | U01 | UI handles invalid request and insufficient stock | Operator sees actionable error and unchanged committed state | Locally verified in Brave |
 | G01 | Run equivalent query and mutation through REST and GraphQL | Same business outcome; interface cost documented | Locally verified against NestJS |
 | D01 | Open the REST explorer from the operator interface | Browser-accessible REST contract renders; OpenAPI describes executable inputs and responses | Locally verified in Brave |
-| M01 | Inventory unavailable during order creation | No false success; recovery policy and final state documented | Not run |
-| M02 | Duplicate/delayed service message or response | No duplicate reservation; final state documented | Not run |
+| M01 | Inventory unavailable during order creation | No false success; recovery policy and final state documented | Locally verified in isolated inventory client/service experiment |
+| M02 | Duplicate/delayed service message or response | No duplicate reservation; final state documented | Locally verified in isolated inventory client/service experiment |
 
 ## Express local run — 12 November 2026
 
@@ -79,3 +79,13 @@ For each executed scenario, add: command/action; starting conditions; expected r
 - **Correction during verification:** an initial 20-mutation-per-minute configuration caused three existing NestJS scenarios to return 429 after repeated verification runs from one IP. It was raised to 120 mutations per minute with a 600-request general limit; after rebuilding to clear process-local counters, the full final run passed. This is calibration for the demo suite, not a production capacity claim.
 - **Implementation commit:** `97b415a`.
 - **Limits:** the native Windows Next build compiled and type-checked but again failed while copying standalone traced files with sandbox `EPERM`; the Linux Docker production build passed. Rate limits use process-local memory and were not tested through a reverse proxy or multiple instances. Limit exhaustion was observed under the rejected 20-request configuration, but the final 120/600 thresholds were not exhausted. Anonymous data reset, authentication, authorisation, hosted CORS/proxy configuration and public abuse testing remain Not run. The existing high-severity transitive `@graphql-tools/utils` audit advisory remains. No Postman change was required because the REST/GraphQL operations did not change.
+
+## Isolated inventory-service experiment — 12 November 2026
+
+- **Commands/actions:** installed and built `apps/inventory-service`; ran `docker compose up -d --build --wait inventory-service`; ran `npm --prefix apps/inventory-service test` once with four scenarios, then twice after adding the refused-connection scenario; ran `npm --prefix apps/inventory-service audit --omit=dev`; reran the NestJS and Express suites and inspected `docker compose ps`.
+- **Starting conditions:** optional inventory service on port 8087 and a separate MySQL 8.4 instance/volume. Tests generated fresh product, order and operation UUIDs. The verified public NestJS/Express paths continued using the original database and were not routed through the experiment.
+- **Expected:** injected pre-commit failure rolls back all stock changes; 503 and network failures exhaust a bounded three-attempt budget without false success; a retry after a lost post-commit response replays one reservation; changed content conflicts; duplicate release restores stock once.
+- **Observed:** the initial four-test run passed. After adding an actual refused connection on `127.0.0.1:65534`, two consecutive five-test runs passed (394 ms and 365 ms test execution respectively). The delayed first response committed, timed out at the client, and the retry returned `replayed: true`; stock moved from five to three once and one reservation line remained. Pre-commit injected failure left both products unchanged. Repeated release returned `replayed: true` and restored stock once. Package audit reported zero vulnerabilities. NestJS remained 12/12 and Express 6/6; both original and experimental databases/services reported healthy.
+- **Implementation commit:** `b5f47cb`.
+- **Decision:** do not retain the split as the default. It adds one service, one database, a network boundary, an operation ledger and retry semantics while leaving order-plus-reservation atomicity unresolved. The optional experiment remains for inspection; see `docs/INVENTORY-SPLIT-DECISION.md`.
+- **Limits:** M01/M02 were verified at the isolated inventory client/service boundary, not through `POST /orders`; no false order success claim is made. Duplicate delivery was sequential/retry-driven; simultaneous duplicate operations were not run. A full saga/outbox, compensating release after order persistence failure, durable reconciliation, multi-instance retry coordination, proxy behaviour, controlled latency benchmark, load test and hosted deployment were not implemented or run. O11 remains Not run for the public order path.

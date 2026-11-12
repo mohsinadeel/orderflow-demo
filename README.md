@@ -2,7 +2,7 @@
 
 A self-directed, progressive order-management architecture demonstration. This repository will compare Express and NestJS implementations of the same order contract, add a Next.js operator interface and GraphQL API, then test whether separating inventory improves this small system.
 
-**Status:** Express and NestJS REST implementations, the Next.js operator workflow and the NestJS GraphQL interface are locally verified for the recorded scenarios. Database-failure recovery and the service-split stage remain unverified.
+**Status:** Express and NestJS REST implementations, the Next.js operator workflow, the NestJS GraphQL interface and an isolated inventory-service experiment are locally verified for the recorded scenarios. The split is not retained as the default architecture; database-failure recovery in the public order path remains unverified.
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 
@@ -42,6 +42,18 @@ Run the UI browser scenario with the installed Brave browser after the stack is 
 ```powershell
 npm --prefix .\apps\web-next run test:ui
 ```
+
+## Inventory-service experiment
+
+The optional `experiment` Compose profile starts a separate inventory service on `http://localhost:8087` and a second MySQL instance with its own persistent volume:
+
+```powershell
+docker compose --profile experiment up -d --build --wait inventory-service
+npm --prefix .\apps\inventory-service run build
+npm --prefix .\apps\inventory-service test
+```
+
+The five integration scenarios exercise pre-commit rollback, bounded retries for 503 and refused connections, a lost response after commit, idempotency conflicts and duplicate release. This service is deliberately not wired into the public Order API: doing so would replace one ACID transaction with a distributed consistency problem requiring a saga/outbox and reconciliation. See [the architecture decision](docs/INVENTORY-SPLIT-DECISION.md).
 
 ## Postman
 
