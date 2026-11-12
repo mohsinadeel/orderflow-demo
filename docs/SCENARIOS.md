@@ -1,6 +1,6 @@
 # Scenario matrix
 
-Status: Express and NestJS local integration runs recorded below — 12 November 2026 (Asia/Karachi). UI, GraphQL and service-split scenarios remain **Not run**.
+Status: Express, NestJS, UI and GraphQL local integration runs recorded below — 12 November 2026 (Asia/Karachi). Database-failure injection and service-split scenarios remain **Not run**.
 
 For each executed scenario, add: command/action; starting conditions; expected result; observed result; verification date; commit ID; remaining limits. Keep separate records for Express, NestJS, UI, GraphQL and service split where applicable.
 
@@ -18,7 +18,7 @@ For each executed scenario, add: command/action; starting conditions; expected r
 | O10 | Cancel order, then cancel again | Stock released once; repeated cancellation leaves it unchanged | Locally verified, Express and NestJS |
 | O11 | Force database failure during order creation | Transaction rolls back; no partial state | Not run |
 | U01 | UI handles invalid request and insufficient stock | Operator sees actionable error and unchanged committed state | Locally verified in Brave |
-| G01 | Run equivalent query and mutation through REST and GraphQL | Same business outcome; interface cost documented | Not run |
+| G01 | Run equivalent query and mutation through REST and GraphQL | Same business outcome; interface cost documented | Locally verified against NestJS |
 | M01 | Inventory unavailable during order creation | No false success; recovery policy and final state documented | Not run |
 | M02 | Duplicate/delayed service message or response | No duplicate reservation; final state documented | Not run |
 
@@ -57,3 +57,14 @@ For each executed scenario, add: command/action; starting conditions; expected r
 - **Observed:** the production Docker image compiled, TypeScript passed and the UI health check passed. Desktop rendering was visually inspected. The repeatable headless-Brave flow passed insufficient-stock feedback with unchanged stock, successful reservation with deduction, cancellation with restoration, and the 390px stacked layout. The test exposed two error-message clearing races in the refresh flow; both were corrected before the passing run.
 - **Implementation commits:** `8328106`, `8f15d0a`.
 - **Limits:** the test used installed Brave in headless mode and a 390×844 viewport; 200% zoom, screen-reader output and dark mode were not independently inspected. The native Windows build compiled and type-checked but standalone file copying hit a sandbox `EPERM`; the Linux Docker production build passed. This remains local synthetic-data evidence, not hosted or production evidence.
+
+## NestJS GraphQL interface — 12 November 2026
+
+- **Commands/actions:** installed the official NestJS GraphQL/Apollo packages; ran `npm --prefix apps/api-nest run build`; rebuilt the NestJS Docker image with `docker compose up -d --build --wait api-nest`; ran `npm --prefix apps/api-nest test` and `npm --prefix apps/api-express test`; parsed the portable Postman collection as JSON; requested GraphiQL with a browser-style `Accept: text/html` header.
+- **Starting conditions:** NestJS and MySQL were running in the existing isolated Compose project on port 8085. Tests created fresh synthetic products, orders and idempotency keys in the persistent local database. GraphQL resolvers called the existing NestJS product and order services.
+- **Expected:** equivalent REST and GraphQL product/order workflows produce the same reservation totals, stock changes, detail state and cancellation outcome; replay returns the same order; conflicts and insufficient stock remain machine-readable.
+- **Observed:** final NestJS run passed nine of nine tests: the existing six REST scenarios plus three GraphQL interface/parity scenarios. Express still passed six of six. The parity test compared independent REST and GraphQL products/orders through creation, reservation, detail query, cancellation and restored stock. GraphQL replay returned the same order; conflict and insufficient-stock responses exposed `extensions.code` and `extensions.status`. A separate test preserved a 3,000,000,000 minor-unit price and total using validated integer values over GraphQL `Float`. GraphiQL returned HTTP 200 and its page content when requested with a browser-style header.
+- **Corrections during verification:** the first GraphQL run passed one of two tests. Apollo removed the reserved `extensions.http` object from an error response, so the public metadata was changed to `extensions.status`; the rebuilt service then passed. A subsequent review identified GraphQL's 32-bit `Int` limit for prices/totals before final evidence was recorded; those fields now use `Float` with integer validation, and the large-value test passed.
+- **Implementation commit:** `3af5490`.
+- **Postman:** repository source `postman/OrderFlow-GraphQL.postman_collection.json` contains eight ordered requests and parsed as valid JSON. A separate cloud collection named **OrderFlow GraphQL — local smoke flow** was created in the connected personal workspace. The connected tool did not expose collection execution, and no Postman Desktop runner was run, so its saved assertions remain **Not run**.
+- **Limits:** HTTP 200 is normal for GraphQL domain errors; clients must inspect `errors` and extension metadata. Authentication, authorisation, query-depth/cost limits, persisted operations, subscriptions, performance comparison and hosted behaviour were not tested. `npm audit --omit=dev` reports one high-severity transitive `@graphql-tools/utils` advisory; the normal non-breaking `npm audit fix` did not resolve it. The blocked `@apollo/protobufjs` postinstall was not approved because runtime/build verification passed without it. This is local synthetic-data evidence only.
