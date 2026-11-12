@@ -65,6 +65,7 @@ jobs:
           DB_TABLE_PREFIX: orderflow_ci_
           ORDERFLOW_BASE_PATH: /orderflow-api
           ORDERFLOW_BASE_URL: http://localhost:8085/orderflow-api
+          ORDERFLOW_TEST_FAULT_INJECTION: enabled
           PORT: 8085
         run: |
           set -euo pipefail

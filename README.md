@@ -2,7 +2,7 @@
 
 A self-directed, progressive order-management architecture demonstration. This repository will compare Express and NestJS implementations of the same order contract, add a Next.js operator interface and GraphQL API, then test whether separating inventory improves this small system.
 
-**Status:** Express and NestJS REST implementations, the Next.js operator workflow, the NestJS GraphQL interface and an isolated inventory-service experiment are locally verified for the recorded scenarios. The NestJS API and operator interface are also deployed on the shared host. The split is not retained as the default architecture; database-failure recovery in the public order path remains unverified.
+**Status:** Express and NestJS REST implementations, the Next.js operator workflow, the NestJS GraphQL interface and an isolated inventory-service experiment are locally verified for the recorded scenarios. The NestJS API and operator interface are also deployed on the shared host. The split is not retained as the default architecture. A deterministic NestJS transaction-failure injection verifies rollback locally; broader infrastructure failure modes remain unverified.
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 

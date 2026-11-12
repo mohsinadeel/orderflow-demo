@@ -112,6 +112,10 @@ export class OrdersService {
           `INSERT INTO ${TABLES.reservations} (id, order_id, product_id, quantity, status) VALUES (?, ?, ?, ?, 'active')`,
           [randomUUID(), id, line.productId, line.quantity],
         );
+        if (process.env.ORDERFLOW_TEST_FAULT_INJECTION === 'enabled'
+          && key.startsWith('test-fail-after-reservation-')) {
+          throw new Error('Injected order transaction failure');
+        }
       }
       const order = await this.present(connection, id);
       await connection.commit();

@@ -109,4 +109,20 @@ describe('OrderFlow black-box contract', () => {
     expect(rejected.status).toBe(404);
     expect(rejected.body.error.code).toBe('PRODUCT_NOT_FOUND');
   });
+
+  it('rolls back the order and reservation after an injected database-path failure', async () => {
+    const item = await product(5);
+    const ordersBefore = await request('/orders');
+    const failed = await order(
+      [{ productId: item.id, quantity: 2 }],
+      `test-fail-after-reservation-${randomUUID()}`,
+    );
+    expect(failed.status).toBe(500);
+    expect(failed.body.error.code).toBe('INTERNAL_ERROR');
+
+    const listing = await request('/products');
+    expect(listing.body.find((row: any) => row.id === item.id).stockAvailable).toBe(5);
+    const ordersAfter = await request('/orders');
+    expect(ordersAfter.body).toHaveLength(ordersBefore.body.length);
+  });
 });

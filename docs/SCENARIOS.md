@@ -1,6 +1,6 @@
 # Scenario matrix
 
-Status: Express, NestJS, UI, GraphQL and the isolated inventory-service experiment are locally verified within the boundaries below — 12 November 2026 (Asia/Karachi). Database-failure injection in the public order path remains **Not run**.
+Status: Express, NestJS, UI, GraphQL and the isolated inventory-service experiment are locally verified within the boundaries below — 13 November 2026 (Asia/Karachi).
 
 For each executed scenario, add: command/action; starting conditions; expected result; observed result; verification date; commit ID; remaining limits. Keep separate records for Express, NestJS, UI, GraphQL and service split where applicable.
 
@@ -16,7 +16,7 @@ For each executed scenario, add: command/action; starting conditions; expected r
 | O08 | Reuse order key with different payload | Conflict; original order unchanged | Locally verified, Express and NestJS |
 | O09 | Change catalogue price after ordering | Existing order keeps captured price and total | Locally verified, Express and NestJS |
 | O10 | Cancel order, then cancel again | Stock released once; repeated cancellation leaves it unchanged | Locally verified, Express and NestJS |
-| O11 | Force database failure during order creation | Transaction rolls back; no partial state | Not run |
+| O11 | Force database failure during order creation | Transaction rolls back; no partial state | Locally verified, NestJS test-only injection |
 | U01 | UI handles invalid request and insufficient stock | Operator sees actionable error and unchanged committed state | Locally verified in Brave |
 | G01 | Run equivalent query and mutation through REST and GraphQL | Same business outcome; interface cost documented | Locally verified against NestJS |
 | D01 | Open the REST explorer from the operator interface | Browser-accessible REST contract renders; OpenAPI describes executable inputs and responses | Locally verified in Brave |
@@ -121,3 +121,17 @@ For each executed scenario, add: command/action; starting conditions; expected r
 - **Browser follow-up:** the first live operator render exposed a runtime-only base-path omission: the page shell returned 200, but its client requested `/api/orderflow/*` at the Laravel root and displayed `Request failed`. Adding `ORDERFLOW_BASE_PATH=/orderflow-demo` to the owner-only web environment and restarting only the web Passenger app restored the catalogue. Browser verification then showed all three products and stock counts, an enabled reserve action and an error-free refresh. Swagger rendered all documented operations; executing `GET /health` returned 200/`ok`, and executing `GET /products` returned the three fixtures. The raw OpenAPI page rendered with the correct public server. The deployment workflow now rejects a web environment missing the mounted base path.
 - **Related commits:** OrderFlow `012da60` (CloudLinux activation), `1423e66` (Passenger-compatible bootstrap), `a5fc965` (hosted API base path); parent portal `50cf36d` (OrderFlow route exclusions).
 - **Limits:** no hosted create/update/cancel mutation, Postman collection, concurrent-order scenario, GraphQL request, reset command, reset cron, load/abuse test or O11 database-failure/deadlock scenario was run. The browser follow-up was read-only; the reserve and cancellation controls were not submitted. The successful workflow proves the recorded CI suite and read-only hosted availability, not every local behavioural scenario in production. The existing NestJS transitive high-severity audit advisory remains.
+
+## NestJS rollback injection — 13 November 2026
+
+- **Command:** rebuilt `api-nest` through Docker Compose, then ran `npm --prefix apps/api-nest test` against the real local MySQL service.
+- **Starting conditions:** `ORDERFLOW_TEST_FAULT_INJECTION=enabled` was present only in the local Compose container. The test created a fresh synthetic product and used a reserved test idempotency-key prefix. Production does not set the enabling environment variable.
+- **Expected:** failure after the order, stock and reservation writes but before commit returns a generic 500; the transaction leaves stock unchanged and does not expose a committed order.
+- **Observed:** all three files and 13 tests passed. O11 returned 500/`INTERNAL_ERROR`, stock remained five and the order-list count was unchanged.
+- **Limits:** this proves application rollback for a deterministic exception within the transaction. It does not simulate loss of the MySQL process, connection interruption, disk failure, commit acknowledgement ambiguity or the deadlock retry branch. The injected error is intentionally unavailable in production.
+
+## GraphQL dependency advisory review — 13 November 2026
+
+- **Commands:** `npm --prefix apps/api-nest audit --omit=dev`, dependency-tree inspection, a package-lock-only install with an exact npm override to `@graphql-tools/utils` `12.1.0`, production audit, Docker rebuild and the full NestJS integration suite.
+- **Observed:** Apollo Server resolved vulnerable `12.0.1` while the NestJS GraphQL branch already resolved patched `12.1.0`; the ordinary `npm audit fix` made no dependency change. The exact override deduplicated the patched version. The production audit then reported zero vulnerabilities, the image build reported zero vulnerabilities, and all 13 REST/GraphQL/documentation tests passed.
+- **Decision:** retain GraphQL deployed but without a visitor-facing link. The advisory no longer justifies disabling it; authentication, query-cost controls and public abuse testing remain absent.
