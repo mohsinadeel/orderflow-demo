@@ -70,6 +70,7 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       ORDERFLOW_API_URL: http://api-nest:3000
+      ORDERFLOW_PUBLIC_API_URL: ${ORDERFLOW_PUBLIC_API_URL:-http://localhost:8085}
     ports:
       - "${ORDERFLOW_WEB_PORT:-8086}:3000"
     depends_on:

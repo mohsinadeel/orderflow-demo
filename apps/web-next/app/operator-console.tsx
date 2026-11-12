@@ -14,7 +14,7 @@ async function jsonRequest(path: string, init?: RequestInit) {
   return body;
 }
 
-export function OperatorConsole() {
+export function OperatorConsole({ publicApiUrl }: { publicApiUrl: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [selected, setSelected] = useState('');
@@ -53,7 +53,7 @@ export function OperatorConsole() {
   }
 
   return <main>
-    <header><div><p className="eyebrow">ORDERFLOW / LOCAL OPERATOR</p><h1>Reservation desk</h1><p className="lede">Create and cancel synthetic orders while watching inventory move atomically.</p></div><span className="status">NestJS API · local</span></header>
+    <header><div><p className="eyebrow">ORDERFLOW / OPERATOR DEMO</p><h1>Reservation desk</h1><p className="lede">Create and cancel synthetic orders while watching inventory move atomically.</p><nav className="api-links" aria-label="API explorers"><a href={`${publicApiUrl}/api/docs`} target="_blank" rel="noreferrer">Explore REST API</a><a href={`${publicApiUrl}/graphql`} target="_blank" rel="noreferrer">Explore GraphQL</a></nav></div><span className="status">NestJS API · connected</span></header>
     <div className="announcer" aria-live="polite">{error && <p className="alert error"><strong>Request failed.</strong> {error}</p>}{message && <p className="alert success">{message}</p>}</div>
     <section className="grid" aria-label="Order workflow">
       <form className="panel order-form" onSubmit={submit}><p className="step">01 / RESERVE</p><h2>Create order</h2>

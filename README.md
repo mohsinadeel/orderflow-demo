@@ -18,7 +18,9 @@ With Docker running, execute from this repository:
 docker compose up -d --build --wait
 ```
 
-The Express API listens at `http://localhost:8084`, NestJS at `http://localhost:8085`, GraphQL and local GraphiQL at `http://localhost:8085/graphql`, and the Next.js operator interface at `http://localhost:8086`. MySQL has an isolated named volume and no host port. Configure local credentials and ports by copying `.env.example` to `.env`; do not commit `.env`.
+The Express API listens at `http://localhost:8084`, NestJS at `http://localhost:8085`, Swagger UI at `http://localhost:8085/api/docs`, the raw OpenAPI document at `http://localhost:8085/api/openapi.json`, GraphQL and GraphiQL at `http://localhost:8085/graphql`, and the Next.js operator interface at `http://localhost:8086`. The operator header links to both interactive API explorers. MySQL has an isolated named volume and no host port. Configure local credentials and ports by copying `.env.example` to `.env`; do not commit `.env`.
+
+`ORDERFLOW_PUBLIC_API_URL` controls the browser-visible API origin used by those explorer links. It defaults to `http://localhost:8085`; a hosted deployment must set its public API URL explicitly. The NestJS interface applies a 32 KB JSON-body limit, a general in-memory limit of 600 requests per minute per client, and a tighter 120-per-minute limit to mutations. These limits support the repeatable behavioural suite while bounding casual anonymous use; they are not a complete public security model. A proxy deployment must configure trusted proxy handling before IP-based limiting can be relied upon.
 
 Run the integration suite after the stack starts:
 

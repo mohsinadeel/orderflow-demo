@@ -16,6 +16,9 @@ const browser = await chromium.launch({ executablePath, headless: true, args: ['
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
+  const restExplorerUrl = await page.getByRole('link', { name: 'Explore REST API' }).getAttribute('href');
+  const graphqlExplorerUrl = await page.getByRole('link', { name: 'Explore GraphQL' }).getAttribute('href');
+  if (!restExplorerUrl || !graphqlExplorerUrl) throw new Error('API explorer links are missing');
   await page.getByLabel('Product').selectOption(product.id);
   await page.getByLabel('Quantity').fill('3');
   await page.waitForTimeout(100);
@@ -45,7 +48,13 @@ try {
   const second = await panels.nth(1).boundingBox();
   if (!first || !second || second.y <= first.y + first.height) throw new Error('Mobile panels did not stack');
 
-  console.log(JSON.stringify({ insufficientStock: 'passed', reservation: 'passed', cancellation: 'passed', mobileLayout: 'passed', productId: product.id }, null, 2));
+  const explorer = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await explorer.goto(restExplorerUrl, { waitUntil: 'networkidle' });
+  if (!(await explorer.locator('body').innerText()).includes('OrderFlow REST API')) throw new Error('Swagger UI did not render');
+  await explorer.goto(graphqlExplorerUrl, { waitUntil: 'networkidle' });
+  if (!(await explorer.locator('body').innerText()).includes('GraphiQL')) throw new Error('GraphiQL did not render');
+
+  console.log(JSON.stringify({ insufficientStock: 'passed', reservation: 'passed', cancellation: 'passed', mobileLayout: 'passed', swaggerUi: 'passed', graphiql: 'passed', productId: product.id }, null, 2));
 } finally {
   await browser.close();
 }

@@ -17,9 +17,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
       }
       if (error instanceof HttpException) {
         const status = error.getStatus();
-        return new GraphQLError(status === HttpStatus.NOT_FOUND ? 'Not found' : 'Invalid request', {
+        const code = status === HttpStatus.NOT_FOUND ? 'NOT_FOUND'
+          : status === HttpStatus.PAYLOAD_TOO_LARGE ? 'PAYLOAD_TOO_LARGE'
+            : status === HttpStatus.TOO_MANY_REQUESTS ? 'RATE_LIMITED' : 'VALIDATION_ERROR';
+        const message = status === HttpStatus.NOT_FOUND ? 'Not found'
+          : status === HttpStatus.PAYLOAD_TOO_LARGE ? 'Request payload is too large'
+            : status === HttpStatus.TOO_MANY_REQUESTS ? 'Rate limit exceeded' : 'Invalid request';
+        return new GraphQLError(message, {
           extensions: {
-            code: status === HttpStatus.NOT_FOUND ? 'NOT_FOUND' : 'VALIDATION_ERROR',
+            code,
             status,
           },
         });
@@ -36,11 +42,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
     if (error instanceof HttpException) {
       const status = error.getStatus();
+      const code = status === HttpStatus.NOT_FOUND ? 'NOT_FOUND'
+        : status === HttpStatus.PAYLOAD_TOO_LARGE ? 'PAYLOAD_TOO_LARGE'
+          : status === HttpStatus.TOO_MANY_REQUESTS ? 'RATE_LIMITED' : 'VALIDATION_ERROR';
+      const message = status === HttpStatus.NOT_FOUND ? 'Not found'
+        : status === HttpStatus.PAYLOAD_TOO_LARGE ? 'Request payload is too large'
+          : status === HttpStatus.TOO_MANY_REQUESTS ? 'Rate limit exceeded' : 'Invalid request';
       response.status(status).json({
-        error: {
-          code: status === HttpStatus.NOT_FOUND ? 'NOT_FOUND' : 'VALIDATION_ERROR',
-          message: status === HttpStatus.NOT_FOUND ? 'Not found' : 'Invalid request',
-        },
+        error: { code, message },
       });
       return;
     }
