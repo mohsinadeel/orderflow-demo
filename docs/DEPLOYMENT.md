@@ -20,6 +20,8 @@ Create these applications before the first workflow run:
 
 Use Node `22.23.5`, production mode, and separate Passenger logs under `/home6/inceptio/logs/`. Do not create either application until the release artefacts and server environment files are ready.
 
+CloudLinux created the API virtual environment at `/home6/inceptio/nodevenv/demo.mohsinadeel.dev/orderflow-api/22`; the deployment workflow validates that exact generated path before changing application files.
+
 The API root requires an owner-readable `.env` containing the established shared database connection plus:
 
 ```dotenv

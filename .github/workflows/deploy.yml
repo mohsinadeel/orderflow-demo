@@ -151,7 +151,7 @@ jobs:
           WEB_PATH=/home6/inceptio/demo.mohsinadeel.dev/orderflow-demo
           API_ARCHIVE=/home6/inceptio/orderflow-api.tgz
           WEB_ARCHIVE=/home6/inceptio/orderflow-web.tgz
-          API_NODE_ENV=/home6/inceptio/nodevenv/orderflow-api/22/bin/activate
+          API_NODE_ENV=/home6/inceptio/nodevenv/demo.mohsinadeel.dev/orderflow-api/22/bin/activate
 
           test -d "$API_PATH" && test -d "$WEB_PATH"
           test -f "$API_PATH/.env" && test -f "$WEB_PATH/.env"
