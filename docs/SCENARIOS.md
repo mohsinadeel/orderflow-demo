@@ -17,7 +17,7 @@ For each executed scenario, add: command/action; starting conditions; expected r
 | O09 | Change catalogue price after ordering | Existing order keeps captured price and total | Locally verified, Express and NestJS |
 | O10 | Cancel order, then cancel again | Stock released once; repeated cancellation leaves it unchanged | Locally verified, Express and NestJS |
 | O11 | Force database failure during order creation | Transaction rolls back; no partial state | Not run |
-| U01 | UI handles invalid request and insufficient stock | Operator sees actionable error and unchanged committed state | Not run |
+| U01 | UI handles invalid request and insufficient stock | Operator sees actionable error and unchanged committed state | Implemented; proxy path verified, browser interaction incomplete |
 | G01 | Run equivalent query and mutation through REST and GraphQL | Same business outcome; interface cost documented | Not run |
 | M01 | Inventory unavailable during order creation | No false success; recovery policy and final state documented | Not run |
 | M02 | Duplicate/delayed service message or response | No duplicate reservation; final state documented | Not run |
@@ -48,3 +48,12 @@ For each executed scenario, add: command/action; starting conditions; expected r
 - **Observed:** nine requests, nine assertions passed, zero errors. The run displayed 201 for product/order creation, 200 for replay, 409 for changed-key conflict, and 200 for cancellation and stock reads. Duration 1.717 seconds; average response time 31 ms. The run result was visible in Postman at 03:04:57 Asia/Karachi.
 - **Portable collection update:** the source is now `postman/OrderFlow-REST.postman_collection.json`, with explicit Express (`http://localhost:8084`) and NestJS (`http://localhost:8085`) target variables. Equivalent sequential HTTP requests returned the expected 200/201/409 transitions against both APIs after the update. This was not a Postman Desktop runner execution, so no new Postman assertion count is claimed.
 - **Limits:** the recorded Postman Desktop result remains the earlier Express run. The sequential flow does not verify concurrent stock reservation, sustained load, rollback under injected failure, or a hosted integration. The performance numbers are diagnostic for that run only, not a benchmark. A NestJS Postman Desktop runner result remains Not run.
+
+## Next.js operator workflow — 12 November 2026
+
+- **Commands/actions:** built `apps/web-next` in Docker through `docker compose up -d --build --wait web-next`; opened `http://localhost:8086`; exercised the Next.js `/api/orderflow` proxy with synthetic product and order requests.
+- **Starting conditions:** Next.js 16.4.6 on Node 24, NestJS on port 8085, UI on port 8086 and the existing isolated MySQL volume. The interface used the NestJS API through a same-origin server proxy.
+- **Expected:** responsive product/order inspection, successful reservation and cancellation controls, and an actionable insufficient-stock message without changing stock.
+- **Observed:** the production Docker image compiled, TypeScript passed and the UI health check passed. Desktop rendering was visually inspected. Through the UI proxy, a product with stock 2 rejected quantity 3 with 409 `INSUFFICIENT_STOCK` and remained at stock 2; quantity 1 then returned 201 with status `reserved`.
+- **Implementation commit:** `8328106`.
+- **Limits:** browser automation opened and inspected the interface but did not successfully dispatch the form submission, so the visible success/error announcement and cancellation interaction are not yet claimed as browser-verified. Mobile breakpoint, 200% zoom, screen-reader output and dark mode were not independently inspected. The native Windows build compiled and type-checked but standalone file copying hit a sandbox `EPERM`; the Linux Docker production build passed.

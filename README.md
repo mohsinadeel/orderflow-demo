@@ -2,7 +2,7 @@
 
 A self-directed, progressive order-management architecture demonstration. This repository will compare Express and NestJS implementations of the same order contract, add a Next.js operator interface and GraphQL API, then test whether separating inventory improves this small system.
 
-**Status:** Express and NestJS REST implementations are locally verified against the recorded behavioural scenarios. Database-failure recovery and later UI, GraphQL and service-split stages remain unverified. See the scenario matrix for evidence and limits.
+**Status:** Express and NestJS REST implementations are locally verified. A Next.js operator workflow is implemented and its Docker build and API-proxy paths are verified; final browser interaction verification remains incomplete. Database-failure recovery, GraphQL and service-split stages remain unverified.
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 
@@ -18,7 +18,7 @@ With Docker running, execute from this repository:
 docker compose up -d --build --wait
 ```
 
-The Express API listens at `http://localhost:8084` and the NestJS API at `http://localhost:8085` by default. MySQL has an isolated named volume and no host port. Configure local credentials and API ports by copying `.env.example` to `.env`; do not commit `.env`.
+The Express API listens at `http://localhost:8084`, NestJS at `http://localhost:8085`, and the Next.js operator interface at `http://localhost:8086`. MySQL has an isolated named volume and no host port. Configure local credentials and ports by copying `.env.example` to `.env`; do not commit `.env`.
 
 Run the integration suite after the stack starts:
 
