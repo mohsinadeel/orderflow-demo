@@ -40,6 +40,13 @@ async function createOrder(productId, quantity, key) {
   });
 }
 
+async function assertStock(productId, expected) {
+  const result = await request('/products');
+  assert(result.status === 200, `Product listing returned ${result.status}`);
+  const product = result.body.find(item => item.id === productId);
+  assert(product?.stockAvailable === expected, `Expected stock ${expected} for ${productId}, received ${product?.stockAvailable}`);
+}
+
 const smokeProduct = await createProduct(5);
 const smokeKey = `hosted-smoke-${randomUUID()}`;
 const created = await createOrder(smokeProduct.id, 2, smokeKey);
@@ -52,6 +59,7 @@ const cancelled = await request(`/orders/${created.body.id}/cancel`, { method: '
 assert(cancelled.status === 200 && cancelled.body.status === 'cancelled', 'Cancellation failed');
 const cancelledAgain = await request(`/orders/${created.body.id}/cancel`, { method: 'POST' });
 assert(cancelledAgain.status === 200, 'Repeated cancellation failed');
+await assertStock(smokeProduct.id, 5);
 
 const raceProduct = await createProduct(5);
 const competing = await Promise.all([
@@ -61,6 +69,7 @@ const competing = await Promise.all([
 assert(competing.map(result => result.status).sort().join(',') === '201,409', 'Competing orders did not produce one success and one conflict');
 const winner = competing.find(result => result.status === 201);
 await request(`/orders/${winner.body.id}/cancel`, { method: 'POST' });
+await assertStock(raceProduct.id, 5);
 
 const replayProduct = await createProduct(5);
 const concurrentKey = `hosted-replay-${randomUUID()}`;
@@ -71,5 +80,6 @@ const concurrent = await Promise.all([
 assert(concurrent.map(result => result.status).sort().join(',') === '200,201', 'Concurrent replay did not produce create and replay responses');
 assert(concurrent[0].body.id === concurrent[1].body.id, 'Concurrent replay created different orders');
 await request(`/orders/${concurrent[0].body.id}/cancel`, { method: 'POST' });
+await assertStock(replayProduct.id, 5);
 
 console.log('Hosted REST smoke and bounded concurrency verification passed.');
