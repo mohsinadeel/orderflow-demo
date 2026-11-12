@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "OrderFlow GraphQL — local smoke flow",
+    "description": "Sequential synthetic-data checks for the NestJS GraphQL interface. Run in order against the local NestJS service. Concurrency and REST comparison are covered by the integration suites.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8085" },
+    { "key": "productId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "orderKey", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 Create synthetic product",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"mutation ($input: CreateProductInput!) { createProduct(input: $input) { id name active unitPriceMinor currency stockAvailable } }\",\"variables\":{\"input\":{\"name\":\"GraphQL Postman {{$guid}}\",\"unitPriceMinor\":1250,\"stockAvailable\":5}}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL product created with five units', function () { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.errors).to.eql(undefined); const p = body.data.createProduct; pm.expect(p.stockAvailable).to.eql(5); pm.expect(p.unitPriceMinor).to.eql(1250); pm.collectionVariables.set('productId', p.id); pm.collectionVariables.set('orderKey', pm.variables.replaceIn('{{$guid}}')); });"
+      ] } }]
+    },
+    {
+      "name": "02 Create order for two units",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"mutation ($input: CreateOrderInput!) { createOrder(input: $input) { id status currency totalMinor items { productId unitPriceMinor quantity lineTotalMinor } } }\",\"variables\":{\"input\":{\"idempotencyKey\":\"{{orderKey}}\",\"items\":[{\"productId\":\"{{productId}}\",\"quantity\":2}]}}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL order reserved at captured price', function () { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.errors).to.eql(undefined); const o = body.data.createOrder; pm.expect(o.status).to.eql('reserved'); pm.expect(o.totalMinor).to.eql(2500); pm.expect(o.items[0].unitPriceMinor).to.eql(1250); pm.collectionVariables.set('orderId', o.id); });"
+      ] } }]
+    },
+    {
+      "name": "03 Replay same order key",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"mutation ($input: CreateOrderInput!) { createOrder(input: $input) { id status } }\",\"variables\":{\"input\":{\"idempotencyKey\":\"{{orderKey}}\",\"items\":[{\"productId\":\"{{productId}}\",\"quantity\":2}]}}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL replay returns the same order', function () { const body = pm.response.json(); pm.expect(body.errors).to.eql(undefined); pm.expect(body.data.createOrder.id).to.eql(pm.collectionVariables.get('orderId')); });"
+      ] } }]
+    },
+    {
+      "name": "04 Reject changed request under same key",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"mutation ($input: CreateOrderInput!) { createOrder(input: $input) { id } }\",\"variables\":{\"input\":{\"idempotencyKey\":\"{{orderKey}}\",\"items\":[{\"productId\":\"{{productId}}\",\"quantity\":3}]}}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL key conflict is coded', function () { pm.response.to.have.status(200); const e = pm.response.json().errors[0].extensions; pm.expect(e.code).to.eql('IDEMPOTENCY_CONFLICT'); pm.expect(e.status).to.eql(409); });"
+      ] } }]
+    },
+    {
+      "name": "05 Query reserved order",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"query ($id: ID!) { order(id: $id) { id status totalMinor } }\",\"variables\":{\"id\":\"{{orderId}}\"}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL detail query returns the reserved order', function () { const o = pm.response.json().data.order; pm.expect(o.id).to.eql(pm.collectionVariables.get('orderId')); pm.expect(o.status).to.eql('reserved'); pm.expect(o.totalMinor).to.eql(2500); });"
+      ] } }]
+    },
+    {
+      "name": "06 Check stock after reservation",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"query { products { id stockAvailable } }\"}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL stock is deducted once', function () { const p = pm.response.json().data.products.find(x => x.id === pm.collectionVariables.get('productId')); pm.expect(p.stockAvailable).to.eql(3); });"
+      ] } }]
+    },
+    {
+      "name": "07 Cancel order",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"mutation ($id: ID!) { cancelOrder(id: $id) { id status } }\",\"variables\":{\"id\":\"{{orderId}}\"}}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL order is cancelled', function () { pm.expect(pm.response.json().data.cancelOrder.status).to.eql('cancelled'); });"
+      ] } }]
+    },
+    {
+      "name": "08 Check restored stock",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"query\":\"query { products { id stockAvailable } }\"}" },
+        "url": "{{baseUrl}}/graphql"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('GraphQL cancellation restores stock', function () { const p = pm.response.json().data.products.find(x => x.id === pm.collectionVariables.get('productId')); pm.expect(p.stockAvailable).to.eql(5); });"
+      ] } }]
+    }
+  ]
+}

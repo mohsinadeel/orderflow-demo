@@ -41,6 +41,18 @@ Request JSON: `POST /products` accepts `{ name, unitPriceMinor, stockAvailable }
 
 Response JSON uses camelCase. Successful product creation returns 201; order creation returns 201; a matching idempotent replay returns 200; cancellation returns 200. Validation returns 400, missing records 404, insufficient stock and key reuse with a different payload 409, and unexpected errors 500. Error responses use `{ error: { code, message } }`. These shapes and status codes are the parity contract for NestJS.
 
+## GraphQL interface
+
+The NestJS application also exposes `/graphql` as an alternative interface over the same `ProductsService` and `OrdersService`; it does not contain a separate domain implementation. The code-first schema provides:
+
+- queries `products`, `orders` and `order(id)`;
+- mutations `createProduct(input)`, `updateProduct(id, input)`, `createOrder(input)` and `cancelOrder(id)`;
+- product and order fields matching the REST response names and integer minor-unit values.
+
+`CreateOrderInput` carries `idempotencyKey` as a field because GraphQL operations do not use the REST `Idempotency-Key` header. A matching key and payload returns the same order. Domain failures use the normal GraphQL error response with `extensions.code` and `extensions.status`; application-level failures therefore usually retain HTTP 200 while exposing the equivalent REST status as metadata.
+
+GraphQL's built-in `Int` scalar is signed 32-bit, so price and total fields use `Float` while validation still requires safe integer values. Stock and quantity use `Int`, matching the database's signed 32-bit range. Authentication, query-cost controls and production GraphiQL policy remain outside this local demonstration.
+
 ## Non-goals
 
 Authentication, customers, payments, shipping, fulfilment, tax, discounts, reporting dashboards, production scaling claims, and hosted deployment. The Next.js interface is an operator workflow demonstration, not a production admin system.
