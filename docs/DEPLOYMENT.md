@@ -27,6 +27,7 @@ The API root requires an owner-readable `.env` containing the established shared
 ```dotenv
 NODE_ENV=production
 DB_TABLE_PREFIX=orderflow_
+ORDERFLOW_BASE_PATH=/orderflow-api
 ORDERFLOW_PUBLIC_API_URL=https://demo.mohsinadeel.dev/orderflow-api
 TRUST_PROXY_HOPS=1
 ```

@@ -63,6 +63,8 @@ jobs:
           DB_USER: orderflow_ci
           DB_PASSWORD: orderflow_ci_password
           DB_TABLE_PREFIX: orderflow_ci_
+          ORDERFLOW_BASE_PATH: /orderflow-api
+          ORDERFLOW_BASE_URL: http://localhost:8085/orderflow-api
           PORT: 8085
         run: |
           set -euo pipefail
