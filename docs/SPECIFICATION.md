@@ -55,7 +55,7 @@ GraphQL's built-in `Int` scalar is signed 32-bit, so price and total fields use 
 
 ## Browser API exploration
 
-NestJS serves Swagger UI at `/api/docs` and its OpenAPI 3 document at `/api/openapi.json`. The document describes the shared REST contract, request DTOs, response models, idempotency header, expected status codes and synthetic examples. Interactive requests execute against NestJS; Express remains the independent parity implementation of that contract. GraphiQL remains available at `/graphql` for the GraphQL interface.
+NestJS serves Swagger UI at `/api/docs` and its OpenAPI 3 document at `/api/openapi.json`. The document describes the shared REST contract, request DTOs, response models, idempotency header, expected status codes and synthetic examples. Interactive requests execute against NestJS; Express remains the independent parity implementation of that contract. GraphiQL remains available directly at `/graphql`, but the operator interface presents only the REST explorer to visitors.
 
 The local operator interface links to both explorers using `ORDERFLOW_PUBLIC_API_URL`. Public hosting requires an explicit browser-reachable API origin. The API rejects JSON bodies above 32 KB and applies in-memory per-client limits of 600 requests per minute generally and 120 mutations per minute. Rate-limit state is process-local and proxy-aware client identification is not configured until the hosting proxy is known. Anonymous data lifecycle, authentication, authorisation and durable/distributed rate limiting remain deployment decisions, not established protections.
 
