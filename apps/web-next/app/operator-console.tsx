@@ -7,14 +7,14 @@ type Order = { id: string; status: 'reserved' | 'cancelled'; totalMinor: number;
 
 const money = (minor: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(minor / 100);
 
-async function jsonRequest(path: string, init?: RequestInit) {
-  const response = await fetch(`/api/orderflow${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+async function jsonRequest(basePath: string, path: string, init?: RequestInit) {
+  const response = await fetch(`${basePath}/api/orderflow${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error?.message ?? 'Request failed');
   return body;
 }
 
-export function OperatorConsole({ publicApiUrl }: { publicApiUrl: string }) {
+export function OperatorConsole({ publicApiUrl, basePath }: { publicApiUrl: string; basePath: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [selected, setSelected] = useState('');
@@ -25,18 +25,18 @@ export function OperatorConsole({ publicApiUrl }: { publicApiUrl: string }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [nextProducts, nextOrders] = await Promise.all([jsonRequest('/products'), jsonRequest('/orders')]);
+      const [nextProducts, nextOrders] = await Promise.all([jsonRequest(basePath, '/products'), jsonRequest(basePath, '/orders')]);
       setProducts(nextProducts); setOrders(nextOrders);
       setSelected(current => current || nextProducts[0]?.id || '');
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to load OrderFlow'); }
-  }, []);
+  }, [basePath]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setMessage('');
     try {
-      const order = await jsonRequest('/orders', {
+      const order = await jsonRequest(basePath, '/orders', {
         method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() },
         body: JSON.stringify({ items: [{ productId: selected, quantity: Number(quantity) }] }),
       });
@@ -47,7 +47,7 @@ export function OperatorConsole({ publicApiUrl }: { publicApiUrl: string }) {
 
   async function cancel(order: Order) {
     setBusy(true); setError(''); setMessage('');
-    try { await jsonRequest(`/orders/${order.id}/cancel`, { method: 'POST' }); setMessage(`Order ${order.id.slice(0, 8)} cancelled; stock released.`); await refresh(); }
+    try { await jsonRequest(basePath, `/orders/${order.id}/cancel`, { method: 'POST' }); setMessage(`Order ${order.id.slice(0, 8)} cancelled; stock released.`); await refresh(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Cancellation failed'); }
     finally { setBusy(false); }
   }

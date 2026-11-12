@@ -2,6 +2,8 @@ FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+ARG ORDERFLOW_BASE_PATH=
+ENV ORDERFLOW_BASE_PATH=$ORDERFLOW_BASE_PATH
 COPY . .
 RUN npm run build
 

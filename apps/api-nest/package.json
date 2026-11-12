@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
+    "start": "node server.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "reset:data": "node scripts/reset-data.mjs",
     "test": "vitest run --config vitest.config.ts",
     "test:graphql": "vitest run --config vitest.config.ts test/graphql-parity.test.ts"
   },

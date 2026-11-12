@@ -14,5 +14,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+COPY scripts ./scripts
+COPY server.mjs ./server.mjs
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "server.mjs"]

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { ApiError } from '../api-error.js';
+import { TABLES } from '../table-names.js';
 
 export type ProductRecord = RowDataPacket & {
   id: string;
@@ -18,7 +19,7 @@ export class InventoryService {
     const products: ProductRecord[] = [];
     for (const line of lines) {
       const [rows] = await connection.query<ProductRecord[]>(
-        'SELECT id, name, active, unit_price_minor, stock_available FROM products WHERE id = ? FOR UPDATE',
+        `SELECT id, name, active, unit_price_minor, stock_available FROM ${TABLES.products} WHERE id = ? FOR UPDATE`,
         [line.productId],
       );
       const product = rows[0];
@@ -31,14 +32,14 @@ export class InventoryService {
 
   async reserve(connection: PoolConnection, line: RequestedLine) {
     await connection.execute(
-      'UPDATE products SET stock_available = stock_available - ? WHERE id = ? AND stock_available >= ?',
+      `UPDATE ${TABLES.products} SET stock_available = stock_available - ? WHERE id = ? AND stock_available >= ?`,
       [line.quantity, line.productId, line.quantity],
     );
   }
 
   async release(connection: PoolConnection, productId: string, quantity: number) {
     await connection.execute(
-      'UPDATE products SET stock_available = stock_available + ? WHERE id = ?',
+      `UPDATE ${TABLES.products} SET stock_available = stock_available + ? WHERE id = ?`,
       [quantity, productId],
     );
   }

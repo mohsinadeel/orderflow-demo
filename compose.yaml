@@ -93,6 +93,9 @@ services:
       DB_DATABASE: ${ORDERFLOW_MYSQL_DATABASE:-orderflow}
       DB_USER: ${ORDERFLOW_MYSQL_USER:-orderflow}
       DB_PASSWORD: ${ORDERFLOW_MYSQL_PASSWORD:-local_orderflow_password}
+      DB_TABLE_PREFIX: ${ORDERFLOW_DB_TABLE_PREFIX:-}
+      ORDERFLOW_PUBLIC_API_URL: ${ORDERFLOW_PUBLIC_API_URL:-}
+      TRUST_PROXY_HOPS: ${ORDERFLOW_TRUST_PROXY_HOPS:-0}
     ports:
       - "${ORDERFLOW_NEST_PORT:-8085}:3000"
     depends_on:
@@ -110,18 +113,21 @@ services:
     build:
       context: ./apps/web-next
       dockerfile: Dockerfile
+      args:
+        ORDERFLOW_BASE_PATH: ${ORDERFLOW_BASE_PATH:-}
     environment:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       ORDERFLOW_API_URL: http://api-nest:3000
       ORDERFLOW_PUBLIC_API_URL: ${ORDERFLOW_PUBLIC_API_URL:-http://localhost:8085}
+      ORDERFLOW_BASE_PATH: ${ORDERFLOW_BASE_PATH:-}
     ports:
       - "${ORDERFLOW_WEB_PORT:-8086}:3000"
     depends_on:
       api-nest:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000$${ORDERFLOW_BASE_PATH}').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
       interval: 5s
       timeout: 5s
       retries: 30
