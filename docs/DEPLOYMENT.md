@@ -43,7 +43,7 @@ ORDERFLOW_PUBLIC_API_URL=https://demo.mohsinadeel.dev/orderflow-api
 
 The files must remain outside Git and use owner-only permissions. The API migration command validates `DB_TABLE_PREFIX` before constructing identifiers. It creates only the four `orderflow_` tables and inserts the three synthetic catalogue fixtures when absent; it does not create or alter shared users.
 
-Because the API is intentionally anonymous, configure a cPanel cron after deployment to reset only the `orderflow_` data on an agreed schedule. The command requires both a non-empty prefix and the exact confirmation `ORDERFLOW_RESET_CONFIRMATION=RESET-ORDERFLOW-DATA`; it deletes reservations, items, orders and products in foreign-key order, then restores the three fixtures. Do not schedule it until the first hosted smoke test has passed and its timing has been agreed.
+Because the API is intentionally anonymous, the manual-only `Operate OrderFlow production` workflow manages a daily reset at 03:17 server time. Its marked crontab entry invokes `scripts/reset-production.sh`, which validates the exact application path and requires `DB_TABLE_PREFIX=orderflow_` before setting the reset confirmation. The underlying command deletes reservations, items, orders and products in foreign-key order, then restores the three fixtures. Run the hosted smoke and bounded concurrency verification before installing the cron; use the workflow's `reset-now` operation once to verify the hosted reset before relying on its schedule.
 
 ## GitHub configuration
 

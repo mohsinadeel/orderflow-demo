@@ -1,0 +1,109 @@
+name: Operate OrderFlow production
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Production operation
+        required: true
+        type: choice
+        options:
+          - reset-now
+          - install-daily-reset
+          - remove-daily-reset
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orderflow-demo-production
+  cancel-in-progress: false
+
+jobs:
+  operate:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Connect to OpenVPN
+        env:
+          OPENVPN_CONFIG: ${{ secrets.OPENVPN_CONFIG }}
+          VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y openvpn
+          umask 077
+          printf '%s\n' "$OPENVPN_CONFIG" > "$RUNNER_TEMP/orderflow.ovpn"
+          printf '%s\n%s\n' "$VPN_USERNAME" "$VPN_PASSWORD" > "$RUNNER_TEMP/orderflow-vpn.auth"
+          sudo openvpn --config "$RUNNER_TEMP/orderflow.ovpn" \
+            --auth-user-pass "$RUNNER_TEMP/orderflow-vpn.auth" --auth-nocache --daemon \
+            --log "$RUNNER_TEMP/orderflow-openvpn.log" --writepid "$RUNNER_TEMP/orderflow-openvpn.pid"
+          for i in $(seq 1 30); do
+            if ip -brief addr show tun0 up 2>/dev/null | grep -q tun0; then exit 0; fi
+            sleep 2
+          done
+          sudo cat "$RUNNER_TEMP/orderflow-openvpn.log"
+          exit 1
+
+      - name: Prepare SSH credentials
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$RUNNER_TEMP/orderflow-deploy-key"
+          test -n "$SSH_KNOWN_HOSTS"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/orderflow-known-hosts"
+          chmod 600 "$RUNNER_TEMP/orderflow-deploy-key" "$RUNNER_TEMP/orderflow-known-hosts"
+          ssh-keygen -y -f "$RUNNER_TEMP/orderflow-deploy-key" >/dev/null
+
+      - name: Run production operation
+        env:
+          OPERATION: ${{ inputs.operation }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          SSH_OPTS=(-p "$PORT" -i "$RUNNER_TEMP/orderflow-deploy-key" -o IdentitiesOnly=yes
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/orderflow-known-hosts")
+          ssh "${SSH_OPTS[@]}" "$SSH_USERNAME@$SSH_HOST" bash -s -- "$OPERATION" <<'REMOTE'
+          set -euo pipefail
+          OPERATION="$1"
+          RESET_SCRIPT=/home6/inceptio/demo.mohsinadeel.dev/orderflow-api/scripts/reset-production.sh
+          CRON_MARKER='# orderflow-demo-daily-reset'
+          CRON_ENTRY="17 3 * * * /bin/bash $RESET_SCRIPT >> /home6/inceptio/logs/orderflow-reset.log 2>&1 $CRON_MARKER"
+          test -f "$RESET_SCRIPT"
+
+          case "$OPERATION" in
+            reset-now)
+              /bin/bash "$RESET_SCRIPT"
+              ;;
+            install-daily-reset)
+              existing="$(crontab -l 2>/dev/null || true)"
+              filtered="$(printf '%s\n' "$existing" | grep -Fv "$CRON_MARKER" || true)"
+              { printf '%s\n' "$filtered"; printf '%s\n' "$CRON_ENTRY"; } | sed '/^[[:space:]]*$/d' | crontab -
+              crontab -l | grep -F "$CRON_MARKER"
+              ;;
+            remove-daily-reset)
+              existing="$(crontab -l 2>/dev/null || true)"
+              printf '%s\n' "$existing" | grep -Fv "$CRON_MARKER" | crontab -
+              ;;
+            *)
+              echo "Unsupported operation: $OPERATION" >&2
+              exit 1
+              ;;
+          esac
+          REMOTE
+
+      - name: Disconnect OpenVPN and remove temporary credentials
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/orderflow-openvpn.pid" ]; then
+            sudo kill "$(cat "$RUNNER_TEMP/orderflow-openvpn.pid")" || true
+          fi
+          rm -f "$RUNNER_TEMP/orderflow.ovpn" "$RUNNER_TEMP/orderflow-vpn.auth" \
+            "$RUNNER_TEMP/orderflow-deploy-key" "$RUNNER_TEMP/orderflow-known-hosts"
