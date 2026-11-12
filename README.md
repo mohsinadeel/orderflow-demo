@@ -2,13 +2,13 @@
 
 A self-directed, progressive order-management architecture demonstration. This repository will compare Express and NestJS implementations of the same order contract, add a Next.js operator interface and GraphQL API, then test whether separating inventory improves this small system.
 
-**Status:** Express and NestJS REST implementations, the Next.js operator workflow, the NestJS GraphQL interface and an isolated inventory-service experiment are locally verified for the recorded scenarios. The split is not retained as the default architecture; database-failure recovery in the public order path remains unverified.
+**Status:** Express and NestJS REST implementations, the Next.js operator workflow, the NestJS GraphQL interface and an isolated inventory-service experiment are locally verified for the recorded scenarios. The NestJS API and operator interface are also deployed on the shared host. The split is not retained as the default architecture; database-failure recovery in the public order path remains unverified.
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 
 Read [the specification](docs/SPECIFICATION.md), [scenario matrix](docs/SCENARIOS.md), [evidence summary](docs/EVIDENCE-SUMMARY.md), and [implementation plan](docs/PLAN.md). Results are bounded by the recorded commands, dates, commit IDs and limitations.
 
-The prepared hosted topology and its unverified prerequisites are documented in [the deployment guide](docs/DEPLOYMENT.md). Deployment remains manual-only and separate from local verification.
+The hosted topology and manual deployment workflow are documented in [the deployment guide](docs/DEPLOYMENT.md). Hosted verification remains separately bounded from local behavioural evidence.
 
 The self-contained Docker Compose configuration is [compose.yaml](compose.yaml). It uses the official MySQL 8.4 image and builds independent Express and NestJS application images. Both applications use the same schema and external contract, but keep their business services separate.
 
