@@ -6,7 +6,7 @@ A self-directed, progressive order-management architecture demonstration. This r
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 
-Read [the specification](docs/SPECIFICATION.md), [scenario matrix](docs/SCENARIOS.md), and [implementation plan](docs/PLAN.md). Results will be recorded with dates and commit IDs as stages are executed.
+Read [the specification](docs/SPECIFICATION.md), [scenario matrix](docs/SCENARIOS.md), [evidence summary](docs/EVIDENCE-SUMMARY.md), and [implementation plan](docs/PLAN.md). Results are bounded by the recorded commands, dates, commit IDs and limitations.
 
 The self-contained Docker Compose configuration is [compose.yaml](compose.yaml). It uses the official MySQL 8.4 image and builds independent Express and NestJS application images. Both applications use the same schema and external contract, but keep their business services separate.
 
@@ -42,6 +42,28 @@ Run the UI browser scenario with the installed Brave browser after the stack is 
 ```powershell
 npm --prefix .\apps\web-next run test:ui
 ```
+
+## Reproduce verification
+
+From the repository root, run the default API verification:
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Add `-Install` for clean dependency installation, `-IncludeBrowser` for the Brave operator flow, and `-IncludeExperiment` for the isolated inventory-service checks. The full local workflow used for the final evidence run is:
+
+```powershell
+.\scripts\verify.ps1 -IncludeBrowser -IncludeExperiment
+```
+
+The suites create synthetic products and orders in the persistent local database. To replace accumulated local data with the three catalogue fixtures defined in `apps/api-express/schema.sql`, run the guarded destructive reset explicitly:
+
+```powershell
+.\scripts\reset-demo.ps1 -Confirmation 'RESET-ORDERFLOW-LOCAL-DATA'
+```
+
+This removes both Compose-owned MySQL volumes, including all local orders, products and inventory-experiment data, then rebuilds only the default stack. It does not affect external databases. The reset workflow is provided for reproducibility but is not part of the passing scenario evidence unless its execution is recorded separately.
 
 ## Inventory-service experiment
 

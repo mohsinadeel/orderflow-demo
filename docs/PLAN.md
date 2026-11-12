@@ -1,6 +1,6 @@
 # Progressive implementation plan
 
-Status: Milestones 0–5 locally verified — 12 November 2026 (Asia/Karachi).
+Status: Milestones 0–6 locally verified — 12 November 2026 (Asia/Karachi).
 
 ## Architecture and runtime
 
@@ -20,7 +20,7 @@ Status: Milestones 0–5 locally verified — 12 November 2026 (Asia/Karachi).
 4. Add GraphQL queries and mutations over NestJS services. Compare equivalent REST and GraphQL workflows. **Locally verified; interface and evidence commits recorded in the scenario matrix.**
 4.5. Expose the REST and GraphQL contracts to browser visitors. Serve Swagger UI and OpenAPI from NestJS, link both explorers from the operator interface, add examples and bounded request controls, then verify the pages in a real browser. **Locally verified; evidence recorded in the scenario matrix.**
 5. Extract inventory as an experiment. Verify network failure, retry, duplicate request and partial failure handling. **Locally verified; decision: retain the modular monolith and keep the split as an optional experiment.**
-6. Prepare reproducible instructions and an evidence summary. Keep capability claims tied to executed scenarios. Content/article planning follows the implementation evidence.
+6. Prepare reproducible instructions and an evidence summary. Keep capability claims tied to executed scenarios. Content/article planning follows the implementation evidence. **Locally verified; workflow implementation commit `d7387cc`, with consolidated evidence in `docs/EVIDENCE-SUMMARY.md`.**
 
 Commits remain local until Mohsin explicitly authorises a push. GitHub repository creation is separate from a code push. No hosted deployment is assumed.
 
