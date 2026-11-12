@@ -1,6 +1,6 @@
 # Progressive implementation plan
 
-Status: Planned — 11 November 2026 (Asia/Karachi).
+Status: Milestones 0–2 locally verified — 12 November 2026 (Asia/Karachi).
 
 ## Architecture and runtime
 
@@ -15,7 +15,7 @@ Status: Planned — 11 November 2026 (Asia/Karachi).
 
 0. Fix JSON contract, database schema, failure mapping and scenario matrix. Commit specification and repository setup.
 1. Implement Express API, image and Compose runtime. Verify transaction, concurrency, idempotency and cancellation scenarios. Commit the verified baseline.
-2. Reimplement the contract in NestJS modules and injectable services. Run the same black-box scenarios against both APIs. Commit the comparison.
+2. Reimplement the contract in NestJS modules and injectable services. Run the same black-box scenarios against both APIs. **Locally verified at implementation commit `96a8dfa`.**
 3. Build a restrained Next.js operator interface. Verify browser flows and error states. Commit the UI.
 4. Add GraphQL queries and mutations over NestJS services. Compare equivalent REST and GraphQL workflows. Commit the interface and observations.
 5. Extract inventory as an experiment. Verify network failure, retry, duplicate request and partial failure handling. Commit the experiment and architecture decision.
