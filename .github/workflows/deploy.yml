@@ -1,0 +1,212 @@
+name: Deploy OrderFlow demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orderflow-demo-production
+  cancel-in-progress: false
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: orderflow_ci
+          MYSQL_USER: orderflow_ci
+          MYSQL_PASSWORD: orderflow_ci_password
+          MYSQL_ROOT_PASSWORD: orderflow_ci_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -porderflow_ci_root_password --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      API_DEPLOY_PATH: /home6/inceptio/demo.mohsinadeel.dev/orderflow-api
+      WEB_DEPLOY_PATH: /home6/inceptio/demo.mohsinadeel.dev/orderflow-demo
+      PUBLIC_API_URL: https://demo.mohsinadeel.dev/orderflow-api
+      WEB_BASE_PATH: /orderflow-demo
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.5'
+          cache: npm
+          cache-dependency-path: |
+            apps/api-nest/package-lock.json
+            apps/web-next/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm --prefix apps/api-nest ci
+          npm --prefix apps/web-next ci
+
+      - name: Build and verify NestJS
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: orderflow_ci
+          DB_USER: orderflow_ci
+          DB_PASSWORD: orderflow_ci_password
+          DB_TABLE_PREFIX: orderflow_ci_
+          PORT: 8085
+        run: |
+          set -euo pipefail
+          npm --prefix apps/api-nest run build
+          npm --prefix apps/api-nest run migrate
+          npm --prefix apps/api-nest start > "$RUNNER_TEMP/orderflow-api.log" 2>&1 &
+          API_PID=$!
+          trap 'kill "$API_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8085/health >/dev/null; then break; fi
+            if [ "$i" -eq 30 ]; then cat "$RUNNER_TEMP/orderflow-api.log"; exit 1; fi
+            sleep 1
+          done
+          npm --prefix apps/api-nest test
+
+      - name: Build production Next.js application
+        env:
+          ORDERFLOW_BASE_PATH: ${{ env.WEB_BASE_PATH }}
+          ORDERFLOW_PUBLIC_API_URL: ${{ env.PUBLIC_API_URL }}
+        run: npm --prefix apps/web-next run build
+
+      - name: Package release artefacts
+        run: |
+          set -euo pipefail
+          mkdir -p release/api release/web/.next
+          cp -R apps/api-nest/dist apps/api-nest/scripts release/api/
+          cp apps/api-nest/package.json apps/api-nest/package-lock.json apps/api-nest/server.mjs release/api/
+          cp -R apps/web-next/.next/standalone/. release/web/
+          cp -R apps/web-next/.next/static release/web/.next/static
+          cp -R apps/web-next/public release/web/public
+          cp apps/web-next/passenger.cjs release/web/passenger.cjs
+          tar -C release/api -czf "$RUNNER_TEMP/orderflow-api.tgz" .
+          tar -C release/web -czf "$RUNNER_TEMP/orderflow-web.tgz" .
+
+      - name: Connect to OpenVPN
+        env:
+          OPENVPN_CONFIG: ${{ secrets.OPENVPN_CONFIG }}
+          VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y openvpn
+          umask 077
+          printf '%s\n' "$OPENVPN_CONFIG" > "$RUNNER_TEMP/orderflow.ovpn"
+          printf '%s\n%s\n' "$VPN_USERNAME" "$VPN_PASSWORD" > "$RUNNER_TEMP/orderflow-vpn.auth"
+          sudo openvpn --config "$RUNNER_TEMP/orderflow.ovpn" \
+            --auth-user-pass "$RUNNER_TEMP/orderflow-vpn.auth" --auth-nocache --daemon \
+            --log "$RUNNER_TEMP/orderflow-openvpn.log" --writepid "$RUNNER_TEMP/orderflow-openvpn.pid"
+          for i in $(seq 1 30); do
+            if ip -brief addr show tun0 up 2>/dev/null | grep -q tun0; then exit 0; fi
+            sleep 2
+          done
+          sudo cat "$RUNNER_TEMP/orderflow-openvpn.log"
+          exit 1
+
+      - name: Prepare SSH credentials
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$RUNNER_TEMP/orderflow-deploy-key"
+          test -n "$SSH_KNOWN_HOSTS" || { echo 'SSH_KNOWN_HOSTS is required.'; exit 1; }
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/orderflow-known-hosts"
+          chmod 600 "$RUNNER_TEMP/orderflow-deploy-key" "$RUNNER_TEMP/orderflow-known-hosts"
+          ssh-keygen -y -f "$RUNNER_TEMP/orderflow-deploy-key" >/dev/null
+
+      - name: Upload and activate release
+        env:
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          SSH_OPTS=(-p "$PORT" -i "$RUNNER_TEMP/orderflow-deploy-key" -o IdentitiesOnly=yes
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/orderflow-known-hosts")
+          SCP_OPTS=(-P "$PORT" -i "$RUNNER_TEMP/orderflow-deploy-key" -o IdentitiesOnly=yes
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/orderflow-known-hosts")
+          scp "${SCP_OPTS[@]}" "$RUNNER_TEMP/orderflow-api.tgz" "$RUNNER_TEMP/orderflow-web.tgz" "$SSH_USERNAME@$SSH_HOST:/home6/inceptio/"
+          ssh "${SSH_OPTS[@]}" "$SSH_USERNAME@$SSH_HOST" bash -s <<'REMOTE'
+          set -euo pipefail
+          API_PATH=/home6/inceptio/demo.mohsinadeel.dev/orderflow-api
+          WEB_PATH=/home6/inceptio/demo.mohsinadeel.dev/orderflow-demo
+          API_ARCHIVE=/home6/inceptio/orderflow-api.tgz
+          WEB_ARCHIVE=/home6/inceptio/orderflow-web.tgz
+          API_NODE_ENV=/home6/inceptio/nodevenv/orderflow-api/22/bin/activate
+
+          test -d "$API_PATH" && test -d "$WEB_PATH"
+          test -f "$API_PATH/.env" && test -f "$WEB_PATH/.env"
+          test -f "$API_NODE_ENV" || { echo 'Create the Node 22 cPanel applications before deployment.'; exit 1; }
+          umask 077
+          BACKUP="/home6/inceptio/demo-backups/$(date +%Y%m%d-%H%M%S)-orderflow"
+          mkdir -p "$BACKUP"
+          cp "$API_PATH/.env" "$BACKUP/api.env"
+          cp "$WEB_PATH/.env" "$BACKUP/web.env"
+          source "$API_NODE_ENV"
+          cd "$API_PATH"
+          set -a
+          source ./.env
+          set +a
+          test "${DB_TABLE_PREFIX:-}" = orderflow_
+          command -v mysqldump >/dev/null
+          MYSQL_PWD="$DB_PASSWORD" mysqldump --single-transaction --skip-lock-tables \
+            -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_DATABASE" \
+            | gzip > "$BACKUP/shared-database.sql.gz"
+          tar --exclude=.env --exclude=node_modules -czf "$BACKUP/api-files.tgz" -C "$API_PATH" .
+          tar --exclude=.env -czf "$BACKUP/web-files.tgz" -C "$WEB_PATH" .
+
+          rm -rf "$API_PATH/dist" "$API_PATH/scripts" "$API_PATH/server.mjs"
+          rm -rf "$WEB_PATH/.next" "$WEB_PATH/node_modules" "$WEB_PATH/public" \
+            "$WEB_PATH/server.js" "$WEB_PATH/passenger.cjs" "$WEB_PATH/package.json"
+          tar -xzf "$API_ARCHIVE" -C "$API_PATH"
+          tar -xzf "$WEB_ARCHIVE" -C "$WEB_PATH"
+          cd "$API_PATH"
+          npm ci --omit=dev --no-audit --no-fund
+          npm run migrate
+          mkdir -p tmp
+          touch tmp/restart.txt
+          mkdir -p "$WEB_PATH/tmp"
+          touch "$WEB_PATH/tmp/restart.txt"
+          rm -f "$API_ARCHIVE" "$WEB_ARCHIVE"
+          REMOTE
+
+      - name: Verify public endpoints
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl --fail --silent "$PUBLIC_API_URL/health" >/dev/null \
+              && curl --fail --silent "https://demo.mohsinadeel.dev$WEB_BASE_PATH" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Disconnect OpenVPN and remove temporary credentials
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/orderflow-openvpn.pid" ]; then
+            sudo kill "$(cat "$RUNNER_TEMP/orderflow-openvpn.pid")" || true
+          fi
+          rm -f "$RUNNER_TEMP/orderflow.ovpn" "$RUNNER_TEMP/orderflow-vpn.auth" \
+            "$RUNNER_TEMP/orderflow-deploy-key" "$RUNNER_TEMP/orderflow-known-hosts" \
+            "$RUNNER_TEMP/orderflow-api.tgz" "$RUNNER_TEMP/orderflow-web.tgz"

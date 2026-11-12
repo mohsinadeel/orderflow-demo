@@ -8,6 +8,8 @@ A self-directed, progressive order-management architecture demonstration. This r
 
 Read [the specification](docs/SPECIFICATION.md), [scenario matrix](docs/SCENARIOS.md), [evidence summary](docs/EVIDENCE-SUMMARY.md), and [implementation plan](docs/PLAN.md). Results are bounded by the recorded commands, dates, commit IDs and limitations.
 
+The prepared hosted topology and its unverified prerequisites are documented in [the deployment guide](docs/DEPLOYMENT.md). Deployment remains manual-only and separate from local verification.
+
 The self-contained Docker Compose configuration is [compose.yaml](compose.yaml). It uses the official MySQL 8.4 image and builds independent Express and NestJS application images. Both applications use the same schema and external contract, but keep their business services separate.
 
 ## Local run

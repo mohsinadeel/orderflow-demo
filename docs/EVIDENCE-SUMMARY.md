@@ -32,3 +32,7 @@ The full command was executed successfully on 12 November 2026: Express passed 6
 - Authentication, authorisation, public data lifecycle, abuse testing, proxy-aware rate limiting and GraphQL depth/cost controls remain **Not run**.
 - The NestJS dependency tree retains the recorded high-severity transitive `@graphql-tools/utils` advisory. This is a known limitation, not a passed security assessment.
 - No OrderFlow deployment has been performed. Local Docker and browser results do not establish hosted reliability or production readiness.
+
+## Deployment preparation
+
+Post-plan deployment support is implemented at commit `2ae1cb9`: prefixed tables, Passenger entry points, Next.js `/orderflow-demo` packaging, hosted OpenAPI metadata and a guarded data-reset command were locally exercised as recorded in `SCENARIOS.md`. The manual GitHub Actions workflow and all server-side/public steps remain **Not run**; see `DEPLOYMENT.md`.
