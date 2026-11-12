@@ -2,7 +2,7 @@
 
 A self-directed, progressive order-management architecture demonstration. This repository will compare Express and NestJS implementations of the same order contract, add a Next.js operator interface and GraphQL API, then test whether separating inventory improves this small system.
 
-**Status:** Express and NestJS REST implementations are locally verified. A Next.js operator workflow is implemented and its Docker build and API-proxy paths are verified; final browser interaction verification remains incomplete. Database-failure recovery, GraphQL and service-split stages remain unverified.
+**Status:** Express and NestJS REST implementations and the Next.js operator workflow are locally verified for the recorded scenarios. Database-failure recovery, GraphQL and service-split stages remain unverified.
 
 **Version:** `v0.1.0` marks the locally verified Express baseline and Postman smoke flow. `v0.2.0` marks locally verified NestJS parity for the recorded REST scenarios. Version `v1.0.0` is reserved for a documented, stable demo contract after the planned stages and architecture decision are complete.
 
@@ -34,6 +34,12 @@ npm test
 ```
 
 Each suite runs the same six black-box scenarios against its API and creates synthetic products and orders in the persistent local database. NestJS 12.4 is used with Node 24.15; NestJS 12 requires Node 20.19+ or a supported newer line. To stop containers while keeping data, use `docker compose down`. Do not use `down --volumes` unless you intend to remove the demo's local database.
+
+Run the UI browser scenario with the installed Brave browser after the stack is healthy:
+
+```powershell
+npm --prefix .\apps\web-next run test:ui
+```
 
 ## Postman
 
