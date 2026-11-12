@@ -15,7 +15,7 @@ Create these applications before the first workflow run:
 
 | Application | Root | URL | Startup file |
 | --- | --- | --- | --- |
-| NestJS API | `demo.mohsinadeel.dev/orderflow-api` | `demo.mohsinadeel.dev/orderflow-api` | `server.mjs` |
+| NestJS API | `demo.mohsinadeel.dev/orderflow-api` | `demo.mohsinadeel.dev/orderflow-api` | `passenger.cjs` |
 | Next.js UI | `demo.mohsinadeel.dev/orderflow-demo` | `demo.mohsinadeel.dev/orderflow-demo` | `passenger.cjs` |
 
 Use Node `22.23.5`, production mode, and separate Passenger logs under `/home6/inceptio/logs/`. Do not create either application until the release artefacts and server environment files are ready.

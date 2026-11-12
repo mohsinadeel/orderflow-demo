@@ -89,7 +89,7 @@ jobs:
           set -euo pipefail
           mkdir -p release/api release/web/.next
           cp -R apps/api-nest/dist apps/api-nest/scripts release/api/
-          cp apps/api-nest/package.json apps/api-nest/package-lock.json apps/api-nest/server.mjs release/api/
+          cp apps/api-nest/package.json apps/api-nest/package-lock.json apps/api-nest/server.mjs apps/api-nest/passenger.cjs release/api/
           cp -R apps/web-next/.next/standalone/. release/web/
           cp -R apps/web-next/.next/static release/web/.next/static
           cp -R apps/web-next/public release/web/public
@@ -178,7 +178,7 @@ jobs:
           tar --exclude=.env --exclude=node_modules -czf "$BACKUP/api-files.tgz" -C "$API_PATH" .
           tar --exclude=.env -czf "$BACKUP/web-files.tgz" -C "$WEB_PATH" .
 
-          rm -rf "$API_PATH/dist" "$API_PATH/scripts" "$API_PATH/server.mjs"
+          rm -rf "$API_PATH/dist" "$API_PATH/scripts" "$API_PATH/server.mjs" "$API_PATH/passenger.cjs"
           rm -rf "$WEB_PATH/.next" "$WEB_PATH/node_modules" "$WEB_PATH/public" \
             "$WEB_PATH/server.js" "$WEB_PATH/passenger.cjs" "$WEB_PATH/package.json"
           tar -xzf "$API_ARCHIVE" -C "$API_PATH"
