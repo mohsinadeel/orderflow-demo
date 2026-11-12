@@ -161,7 +161,11 @@ jobs:
           mkdir -p "$BACKUP"
           cp "$API_PATH/.env" "$BACKUP/api.env"
           cp "$WEB_PATH/.env" "$BACKUP/web.env"
+          # CloudLinux's generated activation script reads optional variables
+          # that are unset in a non-interactive SSH session.
+          set +u
           source "$API_NODE_ENV"
+          set -u
           cd "$API_PATH"
           set -a
           source ./.env
