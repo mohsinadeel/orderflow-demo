@@ -42,3 +42,15 @@ CREATE TABLE IF NOT EXISTS reservations (
   CONSTRAINT fk_reservations_order FOREIGN KEY (order_id) REFERENCES orders(id),
   CONSTRAINT fk_reservations_product FOREIGN KEY (product_id) REFERENCES products(id)
 ) ENGINE=InnoDB;
+
+INSERT IGNORE INTO products (
+  id,
+  name,
+  active,
+  unit_price_minor,
+  currency,
+  stock_available
+) VALUES
+  ('10000000-0000-4000-8000-000000000001', 'Desk Lamp', TRUE, 1299, 'USD', 8),
+  ('10000000-0000-4000-8000-000000000002', 'Cable Organiser', TRUE, 699, 'USD', 12),
+  ('10000000-0000-4000-8000-000000000003', 'Travel Mug', TRUE, 1899, 'USD', 6);
