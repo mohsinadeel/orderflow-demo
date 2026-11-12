@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ ENV ORDERFLOW_BASE_PATH=$ORDERFLOW_BASE_PATH
 COPY . .
 RUN npm run build
 
-FROM node:24-bookworm-slim
+FROM node:22-bookworm-slim
 ENV NODE_ENV=production
 ENV PORT=3000
 WORKDIR /app

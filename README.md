@@ -37,7 +37,7 @@ npm run build
 npm test
 ```
 
-The Express suite runs six black-box REST scenarios. The NestJS suite runs those same six scenarios plus three GraphQL interface/parity scenarios, creating synthetic products and orders in the persistent local database. NestJS 12.4 is used with Node 24.15; NestJS 12 requires Node 20.19+ or a supported newer line. To stop containers while keeping data, use `docker compose down`. Do not use `down --volumes` unless you intend to remove the demo's local database.
+The Express suite runs six black-box REST scenarios. The NestJS suite runs those same six scenarios plus three GraphQL interface/parity scenarios, creating synthetic products and orders in the persistent local database. Local Docker images use the Node 22 LTS line to match the cPanel/GitHub deployment target; NestJS 12 requires Node 20.19+ or a supported newer line. To stop containers while keeping data, use `docker compose down`. Do not use `down --volumes` unless you intend to remove the demo's local database.
 
 Run the UI browser scenario with the installed Brave browser after the stack is healthy:
 
