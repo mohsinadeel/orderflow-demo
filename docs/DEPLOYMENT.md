@@ -50,6 +50,8 @@ The manual-only workflow `.github/workflows/deploy.yml` uses the same VPN and SS
 - Secrets: `OPENVPN_CONFIG`, `VPN_USERNAME`, `VPN_PASSWORD`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `SSH_PORT`, `SSH_USERNAME`
 - Variable: `SSH_HOST`
 
+Repository-level Actions secrets are available to the `production` job. Run `scripts/Set-DeploymentSecrets.ps1` interactively to enter the seven values from their original sources without placing them in command arguments or files. GitHub does not allow encrypted values to be copied back out of another repository.
+
 The workflow builds and tests NestJS against a prefixed CI schema, builds the Next.js standalone application for `/orderflow-demo`, uploads both artefacts, preserves the server `.env` files, runs the production migration, restarts Passenger through `tmp/restart.txt`, and checks the two public endpoints.
 
 The workflow has not been run. cPanel application creation, server environment files, shared-database backup, migration, reset cron, Passenger routing and public HTTP behaviour remain unverified until an explicitly authorised deployment.
