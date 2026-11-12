@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:ui": "node test/operator-flow.mjs"
   },
   "dependencies": {
     "next": "^16.4.0",
@@ -16,6 +17,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright-core": "^1.65.0",
     "typescript": "^5.0.0"
   }
 }

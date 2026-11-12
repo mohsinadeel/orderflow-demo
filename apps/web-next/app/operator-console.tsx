@@ -27,10 +27,9 @@ export function OperatorConsole() {
     try {
       const [nextProducts, nextOrders] = await Promise.all([jsonRequest('/products'), jsonRequest('/orders')]);
       setProducts(nextProducts); setOrders(nextOrders);
-      if (!selected && nextProducts[0]) setSelected(nextProducts[0].id);
-      setError('');
+      setSelected(current => current || nextProducts[0]?.id || '');
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to load OrderFlow'); }
-  }, [selected]);
+  }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
