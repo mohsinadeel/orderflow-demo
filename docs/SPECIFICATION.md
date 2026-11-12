@@ -57,7 +57,17 @@ GraphQL's built-in `Int` scalar is signed 32-bit, so price and total fields use 
 
 NestJS serves Swagger UI at `/api/docs` and its OpenAPI 3 document at `/api/openapi.json`. The document describes the shared REST contract, request DTOs, response models, idempotency header, expected status codes and synthetic examples. Interactive requests execute against NestJS; Express remains the independent parity implementation of that contract. GraphiQL remains available directly at `/graphql`, but the operator interface presents only the REST explorer to visitors.
 
-The local operator interface links to both explorers using `ORDERFLOW_PUBLIC_API_URL`. Public hosting requires an explicit browser-reachable API origin. The API rejects JSON bodies above 32 KB and applies in-memory per-client limits of 600 requests per minute generally and 120 mutations per minute. Rate-limit state is process-local and proxy-aware client identification is not configured until the hosting proxy is known. Anonymous data lifecycle, authentication, authorisation and durable/distributed rate limiting remain deployment decisions, not established protections.
+The local operator interface links to the REST explorer using `ORDERFLOW_PUBLIC_API_URL`. Public hosting requires an explicit browser-reachable API origin. The API rejects JSON bodies above 32 KB and applies in-memory per-client limits of 600 requests per minute generally and 120 mutations per minute. Rate-limit state is process-local and proxy-aware client identification is not configured until the hosting proxy is known. Anonymous data lifecycle, authentication, authorisation and durable/distributed rate limiting remain deployment decisions, not established protections.
+
+## Inventory-service experiment
+
+Milestone 5 adds an isolated service and separate MySQL instance without replacing the verified modular-monolith path. The experiment owns only inventory items, reservations and its idempotency operation ledger. Its internal HTTP contract provides item registration/inspection, atomic multi-item reservation, reservation inspection and idempotent release.
+
+Every mutating request carries a caller-generated operation ID. Reusing an operation ID with the same canonical payload replays the recorded outcome; changing its payload is a conflict. Reservation locks are acquired in stable product-ID order. A reservation transaction either deducts every requested quantity and records all reservation lines, or rolls back completely.
+
+Fault injection is test-only and header-driven: fail before commit, return unavailable, or delay the first response after commit. The client retries only transport failures and 5xx responses within a bounded attempt budget while preserving the operation ID. These controls verify uncertainty handling; they are not part of the public OrderFlow REST contract.
+
+The experiment does not claim that an order and a remote reservation are atomically committed. Integrating it into the public order path would require an explicit saga/outbox and reconciliation policy. The architecture decision will compare that cost with the existing single-database transaction before any split is retained.
 
 ## Non-goals
 

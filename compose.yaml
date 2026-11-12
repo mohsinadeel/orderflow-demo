@@ -19,6 +19,50 @@ services:
     networks:
       - orderflow
 
+  inventory-mysql:
+    profiles: ["experiment"]
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${ORDERFLOW_INVENTORY_MYSQL_DATABASE:-orderflow_inventory}
+      MYSQL_USER: ${ORDERFLOW_INVENTORY_MYSQL_USER:-orderflow_inventory}
+      MYSQL_PASSWORD: ${ORDERFLOW_INVENTORY_MYSQL_PASSWORD:-local_inventory_password}
+      MYSQL_ROOT_PASSWORD: ${ORDERFLOW_INVENTORY_MYSQL_ROOT_PASSWORD:-local_inventory_root_password}
+    volumes:
+      - inventory_mysql_data:/var/lib/mysql
+      - ./apps/inventory-service/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - orderflow
+
+  inventory-service:
+    profiles: ["experiment"]
+    build:
+      context: ./apps/inventory-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      DB_HOST: inventory-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${ORDERFLOW_INVENTORY_MYSQL_DATABASE:-orderflow_inventory}
+      DB_USER: ${ORDERFLOW_INVENTORY_MYSQL_USER:-orderflow_inventory}
+      DB_PASSWORD: ${ORDERFLOW_INVENTORY_MYSQL_PASSWORD:-local_inventory_password}
+    ports:
+      - "${ORDERFLOW_INVENTORY_PORT:-8087}:3000"
+    depends_on:
+      inventory-mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - orderflow
+
   api-express:
     build:
       context: ./apps/api-express
@@ -86,6 +130,7 @@ services:
 
 volumes:
   mysql_data:
+  inventory_mysql_data:
 
 networks:
   orderflow:
