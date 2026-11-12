@@ -36,6 +36,7 @@ The UI root requires:
 
 ```dotenv
 NODE_ENV=production
+ORDERFLOW_BASE_PATH=/orderflow-demo
 ORDERFLOW_API_URL=https://demo.mohsinadeel.dev/orderflow-api
 ORDERFLOW_PUBLIC_API_URL=https://demo.mohsinadeel.dev/orderflow-api
 ```

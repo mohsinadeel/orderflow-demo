@@ -173,6 +173,12 @@ jobs:
           source ./.env
           set +a
           test "${DB_TABLE_PREFIX:-}" = orderflow_
+          (
+            set -a
+            source "$WEB_PATH/.env"
+            set +a
+            test "${ORDERFLOW_BASE_PATH:-}" = /orderflow-demo
+          )
           command -v mysqldump >/dev/null
           MYSQL_PWD="$DB_PASSWORD" mysqldump --single-transaction --skip-lock-tables \
             -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_DATABASE" \
