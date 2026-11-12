@@ -1,11 +1,13 @@
 {
   "info": {
-    "name": "OrderFlow Express — local smoke flow",
-    "description": "Sequential synthetic-data checks against the local Express API. Run the collection in order. Concurrency is covered separately by the integration suite.",
+    "name": "OrderFlow REST — local smoke flow",
+    "description": "Sequential synthetic-data checks for the shared Express/NestJS REST contract. Set baseUrl to expressBaseUrl or nestBaseUrl, then run the collection in order. Run it once per implementation. Concurrency is covered separately by the integration suites.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8084" },
+    { "key": "expressBaseUrl", "value": "http://localhost:8084" },
+    { "key": "nestBaseUrl", "value": "http://localhost:8085" },
     { "key": "productId", "value": "" },
     { "key": "orderId", "value": "" },
     { "key": "orderKey", "value": "" }

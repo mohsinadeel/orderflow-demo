@@ -37,6 +37,6 @@ Each suite runs the same six black-box scenarios against its API and creates syn
 
 ## Postman
 
-Run the saved nine-request local smoke flow in the **DEMOS → OrderFlow Express — local smoke flow** folder in Postman Desktop. Select **No environment** and use the local runner. A portable copy is in [postman/OrderFlow-Express.postman_collection.json](postman/OrderFlow-Express.postman_collection.json). The sequence creates one synthetic product and order, checks idempotency and stock, then cancels the order twice. It does not test concurrent requests; use the HTTP integration suite for that scenario.
+Import or update [postman/OrderFlow-REST.postman_collection.json](postman/OrderFlow-REST.postman_collection.json) in Postman Desktop, select **No environment**, and use the local runner. Set the collection variable `baseUrl` to `http://localhost:8084` for Express, run the full collection, then set it to `http://localhost:8085` for NestJS and run it again. The named `expressBaseUrl` and `nestBaseUrl` variables retain both targets. The nine-request sequence creates one synthetic product and order, checks idempotency and stock, then cancels the order twice. It does not test concurrent requests; use the HTTP integration suites for that scenario.
 
 This is a synthetic learning and engineering demonstration, not evidence of prior production delivery with these technologies.
